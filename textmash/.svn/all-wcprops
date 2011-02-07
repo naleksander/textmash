@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/12/trunk/TextMash2/textmash
+END
+stream.clj
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/14/trunk/TextMash2/textmash/stream.clj
+END
+caret.clj
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/15/trunk/TextMash2/textmash/caret.clj
+END
+launcher.clj
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/14/trunk/TextMash2/textmash/launcher.clj
+END
+event.clj
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/14/trunk/TextMash2/textmash/event.clj
+END
+repl.clj
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/14/trunk/TextMash2/textmash/repl.clj
+END
+main.clj
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/15/trunk/TextMash2/textmash/main.clj
+END
+menu.clj
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/14/trunk/TextMash2/textmash/menu.clj
+END
+reflect.clj
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/15/trunk/TextMash2/textmash/reflect.clj
+END
+config.clj
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/15/trunk/TextMash2/textmash/config.clj
+END
