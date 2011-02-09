@@ -13,20 +13,18 @@
 
 (ns textmash.main
 	(:use (textmash menu event stream config caret editor))
-	(:import (javax.swing JMenuBar JMenu JMenuItem JFrame JTextArea AbstractAction UIManager)
-		(java.awt FontMetrics Dimension Font Color Point) 
-		(java.awt.event KeyEvent) (java.io InputStream OutputStream
-		BufferedReader InputStreamReader PrintStream
-		PipedInputStream PipedOutputStream)))
+	(:import (javax.swing JFrame UIManager)
+		(java.awt Dimension) 
+		(java.awt.event KeyEvent)))
 
 (UIManager/setLookAndFeel (UIManager/getSystemLookAndFeelClassName))
 
-(defn window[ data ]
-	(let [ f (JFrame. (:title data) )]
+(defn window[ & { :keys [ title menu content ] } ]
+	(let [ f (JFrame. title )]
 		(doto f (-> (.getContentPane) 
-			(.add (:content data)))
+			(.add content))
 			(.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
-			(.setJMenuBar (:menu data) )
+			(.setJMenuBar menu )
 			(.setSize (Dimension. 640 480))
 			(.setLocationRelativeTo nil)
 			(.setVisible true))))
@@ -35,6 +33,10 @@
 	:file { :name "File" :children {
 		 :new  { :name "New" :key KeyEvent/VK_N }
 		:open  { :name	"Open..." :key KeyEvent/VK_O } } }
+	:view { :name "View" :children {
+		:wrapLines { :name "Wrap Lines"  :key KeyEvent/VK_L :checkbox true }
+
+		} }
 	:clojure { :name "Clojure" :children {  
 	 	:newRepl  { :name "Start New REPL" :key KeyEvent/VK_T }
 		:configureRepl  { :name	"Configure" }
@@ -42,6 +44,7 @@
 })
 
 (def actions-definition {
+	:wrapLines (fn[args] (fire-event :wrapLines (.isSelected (.getSource args))))
 	:new (fn[args] (println "Called new"))
 	:open (fn[args] (println "Called open"))
 	:newRepl (fn[args] (process (get-cfg :working-dir) (get-cfg :terminal-launcher { :title "Test" })) )
@@ -49,7 +52,7 @@
 	})
 
 
-(window { :title "TextMash" 
-			:menu (menu-bar (JMenuBar.) menu-definition actions-definition) 
-			:content (create-editor) })
+(window :title "TextMash" 
+			:menu (create-menu menu-definition actions-definition) 
+			:content (create-editor) )
 	

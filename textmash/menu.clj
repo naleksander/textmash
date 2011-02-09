@@ -9,8 +9,8 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.menu
-		(:import (javax.swing JMenuBar JMenu JMenuItem AbstractAction Action KeyStroke)
-		(java.awt Dimension Toolkit)
+		(:import (javax.swing JMenuBar JCheckBoxMenuItem JMenu JMenuItem AbstractAction Action KeyStroke)
+		(java.awt Toolkit)
 		(java.awt.event KeyEvent)))
 
 
@@ -26,14 +26,20 @@
 (defn create-menu-item[ id meta actions children ]
 	(if-let[ action-logic (id actions) ]
 		(if-let [ action (create-action meta action-logic) ]
-			(if (seq children) (JMenu. action) (JMenuItem. action))) 
-				(if (seq children) (JMenu. (:name meta)) (JMenuItem. (:name meta)))))
+			(if (seq children) (JMenu. action) (if (not (nil? (:checkbox meta))) 
+					(JCheckBoxMenuItem. action) (JMenuItem. action)))) 
+				(if (seq children) (JMenu. (:name meta)) 
+					(if (not (nil? :checkbox meta)) 
+						(JCheckBoxMenuItem. (:name meta)) (JMenuItem. (:name meta))))))
 
 
-(defn menu-bar[ parent definition actions ]
+(defn create-menu
+	([definition actions]
+		(create-menu (JMenuBar.) definition actions	))
+	([ parent definition actions ]
 	(doseq [[id meta] definition]
 		(let [children (:children meta) 
 				menu (create-menu-item id meta actions children)]
 					(.add parent (if children
-						(menu-bar menu children actions) menu)))) parent)
+						(create-menu menu children actions) menu)))) parent))
 

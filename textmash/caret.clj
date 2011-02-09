@@ -9,38 +9,8 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.caret
-	(:use (textmash reflect))
-	(:import (javax.swing.text BadLocationException DefaultCaret JTextComponent)
-		(java.awt Graphics Rectangle)))
+	(:use (textmash reflect)))
 
 
-(defn create-caret[textPane]
-	(let [caret (proxy [DefaultCaret][]
-		(damage[^Rectangle rectangle] 
-			(if (not (nil? rectangle))
-				(do 
-				(ivkm this setLocation  (.x rectangle)  (.y rectangle))
-				(setf this height (.height rectangle))
-				(if (<= (getf this width) 0)
-					(setf this width  (.getWidth (ivkm this getComponent))))
-				(ivkm this repaint))
-			))
-		(paint[graphics] 
-			(if-let [comp (ivkm this getComponent)]
-				(let[ dot (.getDot this)]
-					(if-let[ rectangle (.modelToView comp dot)]
-						(let[ dotChar (.charAt (.getText comp dot 1) 0)]
-			(if (or (not= (.x this) (.x rectangle)) (not= (.y this) (.y rectangle)))
-				(do (ivkm this repaint)
-				(ivkm this setLocation  (.x rectangle)  (.y rectangle))
-				(setf this height (.height rectangle))))
-			(.setColor graphics (.getCaretColor comp))
-			(setf this width 2)
-			(if (.isVisible this)
-				(.fillRect graphics (.x rectangle) (.y rectangle) (getf this width) (.height rectangle)))
-			))))))]
 
-		(.setBlinkRate caret (.getBlinkRate (.getCaret textPane)))
-		(.setCaret textPane caret)
-		caret))
 
