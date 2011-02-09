@@ -14,12 +14,12 @@
 		(java.awt Graphics Rectangle)))
 
 
-(defn create-caret[]
-	(proxy [DefaultCaret][]
-		(damage[rectangle] 
+(defn create-caret[textPane]
+	(let [caret (proxy [DefaultCaret][]
+		(damage[^Rectangle rectangle] 
 			(if (not (nil? rectangle))
-				(do (setf this x (.x rectangle))
-				(setf this y (.y rectangle))
+				(do 
+				(ivkm this setLocation  (.x rectangle)  (.y rectangle))
 				(setf this height (.height rectangle))
 				(if (<= (getf this width) 0)
 					(setf this width  (.getWidth (ivkm this getComponent))))
@@ -32,12 +32,15 @@
 						(let[ dotChar (.charAt (.getText comp dot 1) 0)]
 			(if (or (not= (.x this) (.x rectangle)) (not= (.y this) (.y rectangle)))
 				(do (ivkm this repaint)
-				(setf this x (.x rectangle))
-				(setf this y (.y rectangle))
+				(ivkm this setLocation  (.x rectangle)  (.y rectangle))
 				(setf this height (.height rectangle))))
 			(.setColor graphics (.getCaretColor comp))
 			(setf this width 2)
 			(if (.isVisible this)
 				(.fillRect graphics (.x rectangle) (.y rectangle) (getf this width) (.height rectangle)))
-			)))))))
+			))))))]
+
+		(.setBlinkRate caret (.getBlinkRate (.getCaret textPane)))
+		(.setCaret textPane caret)
+		caret))
 

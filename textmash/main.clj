@@ -12,23 +12,14 @@
 (System/setProperty "com.apple.mrj.application.apple.menu.about.name" "TextMash")
 
 (ns textmash.main
-	(:use (textmash menu event stream config caret))
+	(:use (textmash menu event stream config caret editor))
 	(:import (javax.swing JMenuBar JMenu JMenuItem JFrame JTextArea AbstractAction UIManager)
-		(java.awt Dimension Font) (java.awt.event KeyEvent) (java.io InputStream OutputStream
+		(java.awt FontMetrics Dimension Font Color Point) 
+		(java.awt.event KeyEvent) (java.io InputStream OutputStream
 		BufferedReader InputStreamReader PrintStream
 		PipedInputStream PipedOutputStream)))
 
 (UIManager/setLookAndFeel (UIManager/getSystemLookAndFeelClassName))
-
-(defn edit-area[  ]
-	(let [dc (create-caret) ta (JTextArea.)]
-		(.setBlinkRate dc (.getBlinkRate (.getCaret ta)))
-		(.setCaret ta dc)
-		(.setFont ta (Font. (get-cfg :font-type) Font/PLAIN (get-cfg :font-size)))
-		ta))
-
-(comment defn edit-area[  ]
-	(JTextArea. ))
 
 (defn window[ data ]
 	(let [ f (JFrame. (:title data) )]
@@ -60,5 +51,5 @@
 
 (window { :title "TextMash" 
 			:menu (menu-bar (JMenuBar.) menu-definition actions-definition) 
-			:content (edit-area) })
+			:content (create-editor) })
 	
