@@ -44,5 +44,31 @@
 			(throw (Exception. (str "Failed to get field " ~(name method))))))
 
 
+(defmacro swap+
+	([ ky fn]
+		`(swap+ ~'this ~ky ~fn))
+	([ sb ky fn ]
+	`(~ky (swap! (:state (meta ~sb)) (fn[a#] 
+		(assoc-in a# [ ~ky ] (~fn (~ky a#)) ))))))
+
+(defmacro get+
+	([ ky] `(get+  ~'this ~ky))
+	([ sb ky]
+	`(~ky @(:state (meta ~sb)))))
+
+(defmacro set+
+	([ ky v]
+		`(set+ ~'this ~ky ~v))
+	([ sb ky v ]
+	`(~ky (swap! (:state (meta ~sb)) (fn[a#] 
+		(assoc-in a# [ ~ky ] ~v ))))))
+
+(defmacro proxy+[type cstr state & decl]
+	`(let [st# {:state (atom ~state) }]
+		(let [a# (proxy[~@type clojure.lang.IObj]~cstr
+			(withMeta [meta#] (merge st# meta#))
+	        (meta [] st#)
+			~@decl )]
+			 a#)))
 
 

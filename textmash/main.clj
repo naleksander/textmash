@@ -12,7 +12,7 @@
 (System/setProperty "com.apple.mrj.application.apple.menu.about.name" "TextMash")
 
 (ns textmash.main
-	(:use (textmash menu event stream config caret editor))
+	(:use (textmash menu event stream config editor))
 	(:import (javax.swing JFrame UIManager)
 		(java.awt Dimension) 
 		(java.awt.event KeyEvent)))

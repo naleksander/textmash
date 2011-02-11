@@ -10,9 +10,7 @@
 
 (ns textmash.editor
 	(:use (textmash menu event stream config reflect))
-	(:import (javax.swing.text  DefaultCaret  DefaultStyledDocument   AbstractDocument BoxView ComponentView
-		  IconView LabelView ParagraphView StyleConstants StyledEditorKit View ViewFactory))
-	(:import (javax.swing JPanel ScrollPaneConstants JScrollPane BorderFactory JTextPane)
+	(:import (javax.swing.text TabStop TabSet  DefaultCaret  DefaultStyledDocument   AbstractDocument BoxView ComponentView SimpleAttributeSet IconView LabelView ParagraphView StyleConstants StyledEditorKit View ViewFactory) (javax.swing JPanel ScrollPaneConstants JScrollPane BorderFactory JTextPane)
 		(java.awt  Rectangle  BorderLayout Color Dimension Font)))
 
 (defn draw-lines[graphics y last textPane pstart pend_y fontHeight]
@@ -24,9 +22,45 @@
 			(setf pstart y (+ (.y pstart) fontHeight))
 			(draw-lines graphics (+ y fontHeight) pos textPane pstart pend_y fontHeight))))
 
+
+(defn create-tab[wdth cnt textPane]
+	(let[ tabSet (proxy+[TabSet][nil] 
+		{ :width 4 
+		  :stp (proxy+[TabStop][0.0] { :tabPos 0 }
+			(getPosition[] (get+ :tabPos))) }
+		(getTab[index] (set+ (get+ :stp) :tabPos (* index (get+ :width))) 
+			(get+ :stp))
+		(getTabAfter[^Float location] 
+			(set+ (get+ :stp) :tabPos (* (.getTabIndexAfter this location) 
+				(get+ :width))) (get+ :stp))
+		(getTabCount[] cnt)
+		(getTabIndex[tab] (/ (.getPosition tab) (get+ :width)))
+		(getTabIndexAfter[^Float location] 
+			(let [wd (get+ :width) ps (/ location wd)]
+				(+ ps (if (> (- location (* wd ps) )  0.0) 1.0 1.0)))))]
+		(set+ tabSet :width (* wdth (.charWidth (.getFontMetrics textPane (.getFont textPane)) \w)))
+			tabSet))
+
+(defn set-tab-size
+	([textPane charactersPerTab]
+		(set-tab-size textPane charactersPerTab 0 (-> textPane (.getDocument) (.getLength))))
+	([textPane charactersPerTab offset length]
+		(let[ sa (SimpleAttributeSet.) tb (create-tab (int charactersPerTab) 64 textPane) ]
+			(StyleConstants/setTabSet sa tb)
+			(-> textPane (.getStyledDocument) (.setParagraphAttributes offset length sa false)))))
+
+
+
+(defn create-document[textPane]
+	(proxy[DefaultStyledDocument][]
+		(insertString[o s a] 
+			(proxy-super o s a)
+			(set-tab-size textPane 4 o (count s)))))
+
+
 (defn wrap-editor-kit[textPane]
 	(proxy[StyledEditorKit] []
-		(createDefaultDocument[] (DefaultStyledDocument.))))
+		(createDefaultDocument[] (create-document textPane))))
 
 (defn nowrap-editor-kit[textPane]
 	(proxy[StyledEditorKit][]
@@ -43,7 +77,7 @@
 					StyleConstants/IconElementName (IconView. elem))
 				(LabelView. elem))
 			)))
-		(createDefaultDocument[] (DefaultStyledDocument.))))
+		(createDefaultDocument[] (create-document textPane))))
 
 
 (defn create-caret[textPane]
@@ -75,6 +109,8 @@
 		(.setBlinkRate caret (.getBlinkRate (.getCaret textPane)))
 		(.setCaret textPane caret)
 		caret))
+
+
 
 (let[ lines (atom nil) pane (atom nil) ]
 
@@ -120,7 +156,7 @@
 			(.setBackground (.getBackground textPane))
 			(.setPreferredSize  (Dimension. width width)))
 
-		(doto textPane (create-caret) (.setFont font))
+		(doto textPane (create-caret) (.setFont font) (set-tab-size 4))
 
 		;TODO: Subject to change
 		(wrap-lines false)
