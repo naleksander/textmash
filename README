@@ -1,9 +1,19 @@
-; TextMash - simple IDE for Clojure
-; 
-; Copyright (C) 2011 Aleksander Naszko
-;
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-;
-; You must not remove this notice, or any other, from this software.
+# textmash
+
+TextMash - simple IDE for Clojure
+
+## Usage
+
+java -cp ~/.clojure/clojure-1.2.0.jar:~/.clojure/clojure-contrib-1.2.0.jar:. clojure.main textmash/core.clj
+
+## License
+
+Copyright (C) 2011 Aleksander Naszko
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+You must not remove this notice, or any other, from this software.
+
+Distributed under the Eclipse Public License, the same as Clojure.

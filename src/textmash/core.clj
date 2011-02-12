@@ -1,3 +1,5 @@
+(ns textmash.core)
+
 ; TextMash - simple IDE for Clojure
 ; 
 ; Copyright (C) 2011 Aleksander Naszko
