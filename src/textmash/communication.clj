@@ -10,7 +10,7 @@
 
 (ns textmash.communication
 	(:import [java.net DatagramPacket DatagramSocket 
-			InetSocketAddress InetAddress Socket ServerSocket] 
+			InetSocketAddress InetAddress InetSocketAddress Socket ServerSocket] 
 		[java.io BufferedReader ByteArrayOutputStream 
 			ByteArrayInputStream InputStreamReader PrintStream]))
 
@@ -18,8 +18,10 @@
 
 (defmacro bound-thread[ & body ]
 	`(let [ fnc# (bound-fn [] ~@body)]
-		(doto (Thread. (reify Runnable (run[this] (fnc#) ))) 
-			(.setPriority Thread/MAX_PRIORITY) (.start))))
+		(doto (Thread. (reify Runnable (run[this] (fnc#) ))) (.start))))
+
+(defmacro bound-future[ & body ]
+	`(future-call (bound-fn [] ~@body)))
 
 (defn parse-address[ addr ]
 	(let [ [x y] (.split addr ":") ]
@@ -57,9 +59,52 @@
 						(catch Exception e)))) ms ))
 
 
-(comment (def s (send-datagram "127.0.0.1:12345" 2000 (fn[] "ala")))
+(defn- call-remote* [addr cmd & data]
+	(let [ [host port ] (parse-address addr) sck (Socket. ) ]
+			(.connect sck  (InetSocketAddress. 
+				(InetAddress/getByName host) port) 2500)
+		(let [out (PrintStream. (.getOutputStream sck))
+			in (BufferedReader. (InputStreamReader. (.getInputStream sck))) ]
+			(.println out cmd)
+			(.println out (prn-str data))
+			(.flush out)
+			(read-string (.readLine in)))))
 
-(def r (receive-datagram 12345 (fn[ a m ] (println a "sent" m))))
+(defmacro call-remote [ addr cmd & data ]
+	`(call-remote* ~addr (str '~cmd) ~@data))
 
-(comment (.close s)
-(.close r)))
+
+(defn bind-remote[ port & commands ]
+	(let [cmds (zipmap (map #(str (:name (meta %1))) commands) (map (fn[fc]
+		(fn [in out]
+			(.println out (prn-str (apply fc 
+				(read-string (.readLine in))))) (.flush out))) commands)) ]
+		(let [s1 (ServerSocket. port)]
+			(.setSoTimeout s1 2500)
+			(bound-future (while (not (.isClosed s1))
+				(if-let [c1 (try (.accept s1) (catch Exception e nil))]
+					(bound-future (binding [*remote-peer* 
+						(str (.getHostName (.getInetAddress c1)) ":" (.getPort c1) )]
+						(try
+						(let [in (BufferedReader. (InputStreamReader. (.getInputStream c1)))
+							  out (PrintStream. (.getOutputStream c1))
+							  cmdname (.readLine in)]
+							(if-let [ fc (get cmds cmdname)]
+								(fc in out)
+								(throw (Exception. (str "unknown command: " cmdname)))))
+									(catch Exception e2 (.printStackTrace e2))
+										(finally (.close c1)))))))) s1)))
+
+
+
+;(def lc (bind-remote 12345 println str))
+;(.close lc)
+;
+;(call-remote "127.0.0.1:12345" println "hello" "world" 12)
+;
+;(def s (send-datagram "127.0.0.1:12345" 2000 (fn[] "ala")))
+;
+;(def r (receive-datagram 12345 (fn[ a m ] (println a "sent" m))))
+;
+;(.close s)
+;(.close r)
