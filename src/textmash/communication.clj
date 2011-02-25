@@ -59,26 +59,46 @@
 						(catch Exception e)))) ms ))
 
 
-(defn- call-remote* [addr cmd & data]
+(defn- call-remote* [addr type cmd & data]
 	(let [ [host port ] (parse-address addr) sck (Socket. ) ]
 			(.connect sck  (InetSocketAddress. 
 				(InetAddress/getByName host) port) 2500)
 		(let [out (PrintStream. (.getOutputStream sck))
 			in (BufferedReader. (InputStreamReader. (.getInputStream sck))) ]
+			(.println out type)
 			(.println out cmd)
 			(.println out (prn-str data))
 			(.flush out)
 			(read-string (.readLine in)))))
 
 (defmacro call-remote [ addr cmd & data ]
-	`(call-remote* ~addr (str '~cmd) ~@data))
+	`(call-remote* ~addr "synch" (str '~cmd) ~@data))
 
+(defmacro asynch-call-remote [ addr cmd & data ]
+	`(call-remote* ~addr "asynch" (str '~cmd) ~@data)) 
 
-(defn bind-remote[ port & commands ]
-	(let [cmds (zipmap (map #(str (:name (meta %1))) commands) (map (fn[fc]
-		(fn [in out]
-			(.println out (prn-str (apply fc 
-				(read-string (.readLine in))))) (.flush out))) commands)) ]
+(defmacro eval-call-remote [ addr data]
+	`(call-remote* ~addr "eval" "eval" ~(prn-str data)))
+
+(defn- synch-call[fc in out]
+	(.println out (prn-str (apply fc 
+		(read-string (.readLine in)))))(.flush out))
+
+(defn- asynch-call[fc in out]
+	(let [args (read-string (.readLine in))]
+		(.println out (prn-str nil))
+		(.flush out)
+		(apply fc args)))
+
+(defn- eval-call[fc in out]
+	(let [content (read-string (.readLine in))]
+	(.println out (fc (load-string (first content))))
+		(.flush out)))
+
+(defn bind-remote[ port & commands-args ]
+	(let[ commands (cons eval commands-args) ]
+		(let [cmds (zipmap (map #(str (:name (meta %1))) commands) commands) 
+		  cmd-type { "synch" synch-call "asynch" asynch-call "eval" eval-call } ]
 		(let [s1 (ServerSocket. port)]
 			(.setSoTimeout s1 2500)
 			(bound-future (while (not (.isClosed s1))
@@ -88,19 +108,23 @@
 						(try
 						(let [in (BufferedReader. (InputStreamReader. (.getInputStream c1)))
 							  out (PrintStream. (.getOutputStream c1))
-							  cmdname (.readLine in)]
-							(if-let [ fc (get cmds cmdname)]
-								(fc in out)
-								(throw (Exception. (str "unknown command: " cmdname)))))
-									(catch Exception e2 (.printStackTrace e2))
-										(finally (.close c1)))))))) s1)))
+							  cmdtype (.readLine in) cmdname (.readLine in)]
+							(let [ type (get cmd-type cmdtype) ]
+								(if-let [ fc (get cmds cmdname)]
+									(type fc in out)
+									(throw (Exception. (str "unknown command: " cmdname))))))
+										(catch Exception e2 (.printStackTrace e2))
+											(finally (.close c1)))))))) s1))))
 
 
 
 ;(def lc (bind-remote 12345 println str))
 ;(.close lc)
 ;
-;(call-remote "127.0.0.1:12345" println "hello" "world" 12)
+;(asynch-call-remote "127.0.0.1:12345" println "hello" "world" 12)
+
+;(println "got" (eval-call-remote  "127.0.0.1:12345" (do (println (+ 2 3)) (println  "wpwppwpw") 2) ))
+
 ;
 ;(def s (send-datagram "127.0.0.1:12345" 2000 (fn[] "ala")))
 ;
