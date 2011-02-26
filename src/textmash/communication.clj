@@ -69,7 +69,11 @@
 			(.println out cmd)
 			(.println out data)
 			(.flush out)
-			(read-string (.readLine in)))))
+			(let [ result (.readLine in) 
+					content (read-string (.readLine in))]
+				(if (= result "ok")
+					content
+					(throw (Exception. content)))))))
 
 
 (defmacro call-remote [ addr cmd & data ]
@@ -81,25 +85,32 @@
 (defmacro eval-call-remote [ addr data]
 	`(call-remote* ~addr "eval" "eval" ~(prn-str data)))
 
-(defn- synch-call[fc in out]
-	(.println out (prn-str (apply fc 
-		(read-string (.readLine in)))))(.flush out))
+(defn- synch-call[execfn fc in out]
+	(let [args (read-string (.readLine in))]
+		(try
+			(let[ result (execfn fc args)]
+				(.println out "ok")
+				(.println out (prn-str result)))
+			(catch Exception e 
+				(do
+					(.println out "failed")
+					(.println out (prn-str (with-out-str (.printStackTrace e))))))) 
+				(.flush out)))
 
 (defn- asynch-call[fc in out]
 	(let [args (read-string (.readLine in))]
+		(.println out "ok")
 		(.println out (prn-str nil))
 		(.flush out)
-		(apply fc args)))
-
-(defn- eval-call[fc in out]
-	(let [content (load-string (.readLine in))]
-	(.println out (fc content))
-		(.flush out)))
+		(bound-future
+			(apply fc args))))
 
 (defn bind-remote[ port & commands-args ]
 	(let[ commands (cons eval commands-args) ]
 		(let [cmds (zipmap (map #(str (:name (meta %1))) commands) commands) 
-		  cmd-type { "synch" synch-call "asynch" asynch-call "eval" eval-call } ]
+		  cmd-type { "synch" (partial synch-call (fn[ fc args] (apply fc args)))
+					 "asynch" asynch-call 
+					 "eval" (partial synch-call (fn[ fc args] (fc args))) } ]
 		(let [s1 (ServerSocket. port)]
 			(.setSoTimeout s1 2500)
 			(bound-future (while (not (.isClosed s1))
@@ -114,16 +125,24 @@
 											(catch Exception e2 (.printStackTrace e2))
 												(finally (.close c1)))))))) s1))))
 
-
-
-;(def lc (bind-remote 12345 println str))
-;;(.close lc)
+;(defn test-me[ a ]
+;	;(throw (RuntimeException. "owowow"))
+;	(println "processing" a))
+;
+;(def lc (bind-remote 12345 println str test-me))
+;(.close lc)
+;;;
+;;(asynch-call-remote "127.0.0.1:12345" println "hello" "world" 12)
 ;;
-;(asynch-call-remote "127.0.0.1:12345" println "hello" "world" 12)
+;(call-remote "127.0.0.1:12345" test-me "none")
+;;
 ;
-;(call-remote "127.0.0.1:12345" println "hello" "world" 12)
+;(eval (read-string (prn-str '(println2 2))))
 ;
-;(println "got" (eval-call-remote  "127.0.0.1:12345" (do (println (+ 2 3)) (println  "wpwppwpw") 2) ))
+;;(.printStackTrace *e)
+;
+;(println "got" (eval-call-remote  "127.0.0.1:12345" (do (println (+ 2 3)) 
+;	(throw (Exception. "alalala")) (println  "wpwppwpw") 2) ))
 ;
 ;
 ;(def s (send-datagram "127.0.0.1:12345" 2000 (fn[] "ala")))
