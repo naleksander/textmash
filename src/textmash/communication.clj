@@ -9,19 +9,15 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.communication
+	(:use (textmash commons))
 	(:import [java.net DatagramPacket DatagramSocket 
 			InetSocketAddress InetAddress InetSocketAddress Socket ServerSocket] 
 		[java.io BufferedReader ByteArrayOutputStream 
 			ByteArrayInputStream InputStreamReader PrintStream]))
 
 (def *remote-peer*)
+(def *reported-workers* (atom {}))
 
-(defmacro bound-thread[ & body ]
-	`(let [ fnc# (bound-fn [] ~@body)]
-		(doto (Thread. (reify Runnable (run[this] (fnc#) ))) (.start))))
-
-(defmacro bound-future[ & body ]
-	`(future-call (bound-fn [] ~@body)))
 
 (defn parse-address[ addr ]
 	(let [ [x y] (.split addr ":") ]
@@ -125,6 +121,31 @@
 											(catch Exception e2 (.printStackTrace e2))
 												(finally (.close c1)))))))) s1))))
 
+(defn listen-timed-out[timeout fnc]
+	(schedule (/ timeout 2)
+		(with-local-vars [timedout nil unit-names nil]
+			(swap! *reported-workers* (fn[workers-data]
+					(let [older-than (now (- timeout)) 
+						which-one (filter (fn[[k v]] (< v older-than)) (:when workers-data))]
+							(var-set timedout (map first which-one))
+							(apply dissoc-in workers-data [ :when ] @timedout))))
+			(if-not (empty? @timedout)
+				(fnc @timedout)))))
+
+
+(defn report-existance[ unit-address ]
+	(swap! *reported-workers* 
+		(fn[workers-data]
+			(assoc-in 
+				(if (nil? (get-in workers-data [:addresses unit-address] )) 
+					(update-in-using workers-data [:idle] #{} conj unit-address)
+						workers-data) [:when unit-address] (now)))))
+
+
+;(listen-timed-out 5000 (fn[ a] (println "Received" a)))
+;
+;(report-existance "127.0.0.1:12345")
+;
 ;(defn test-me[ a ]
 ;	;(throw (RuntimeException. "owowow"))
 ;	(println "processing" a))
