@@ -21,8 +21,14 @@
 (defmacro bound-future[ & body ]
 	`(future-call (bound-fn [] ~@body)))
 
+(defmacro bound-daemon[ & body ]
+	`(let[ t# (Thread. (reify Runnable (run[this] ~@body)))]
+		(.setPriority t# Thread/MAX_PRIORITY)
+		(.setDaemon t# true)
+		(.start t#) t#))
+
 (defmacro schedule[frequency & content]
-	`(bound-future 
+	`(bound-daemon 
 			(loop[]
 				(do ~@content)
 				(Thread/sleep ~frequency)

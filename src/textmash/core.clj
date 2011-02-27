@@ -48,19 +48,19 @@
 
 
 (receive-periodic-datagram 3246 (fn[ address message ]
-	(report-existance (str (first (parse-address address)) ":" message))))
+	(report-active-unit (str (first (parse-address address)) ":" message))))
 
-(def existance (existance-listener 5000 (fn[ new-active-repl ]
+(active-units-listener 5000 (fn[ new-active-repl ]
 	(println "New REPL" new-active-repl))
 	(fn[ old-inactive-repls ]
-		(println "Lost REPLs" old-inactive-repls))))
+		(println "Lost REPLs" old-inactive-repls)))
 
 (def actions-definition {
 	:wrapLines (fn[args] (fire-event :wrapLines (.isSelected (.getSource args))))
 	:new (fn[args] (println "Called new"))
 	:open (fn[args] (println "Called open"))
 	:testMsg (fn[ args ] 
-		(if-let [ repl (first (existing)) ]
+		(if-let [ repl (first (get-active-units)) ]
 			(asynch-call-remote repl execute-statement "(println \"Hello World\")")
 			(println "No active REPL found")))
 	:newRepl (fn[args] (process (get-cfg :working-dir) (get-cfg :terminal-launcher { :title "Test" })) )

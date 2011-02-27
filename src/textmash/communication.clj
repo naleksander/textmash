@@ -121,7 +121,7 @@
 											(catch Exception e2 (.printStackTrace e2))
 												(finally (.close c1)))))))) s1))))
 
-(defn existance-listener[timeout incoming-fnc outcoming-fnc]
+(defn active-units-listener[timeout incoming-fnc outcoming-fnc]
 	(reset! *incoming-listener* incoming-fnc)
 	(schedule (/ timeout 2)
 		(let[ outcoming (dosync 
@@ -130,13 +130,13 @@
 				(if (not-empty outcoming) (outcoming-fnc outcoming)))))
 
 
-(defn report-existance[ address ]
+(defn report-active-unit[ address ]
 	(if-not (dosync 
 		(let[ incoming (contains? @*reported-existance* address) ]
 			(alter *reported-existance* assoc address (now)) incoming)) 
 				(if-let [ incoming-fnc @*incoming-listener* ] (incoming-fnc address))))
 
-(defn existing[]
+(defn get-active-units[]
 	(map first @*reported-existance*))
 
 

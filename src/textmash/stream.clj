@@ -9,17 +9,11 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.stream
+	(:use (textmash commons))
 	(:import (javax.swing JMenuBar JMenu JMenuItem AbstractAction)
 	(java.awt Dimension) (java.io File InputStream OutputStream
 		BufferedReader InputStreamReader PrintStream
 		PipedInputStream PipedOutputStream)))
-
-(defmacro daemon[ & fnc ]
-	`(let[ d# (reify Runnable (run[this] ~@fnc))
-		t# (Thread. d#)]
-		(.setPriority t# Thread/MAX_PRIORITY)
-		(.setDaemon t# true)
-		(.start t#) t#))
 
 (defn piped-stream[]
 	(let[ pi (PipedInputStream.) po (PipedOutputStream.)]
@@ -27,7 +21,7 @@
 			[pi (PrintStream. po)]))
 
 (defn- transfer-stub[read-fn print-fn cond-fn in out encoding ]
-	(daemon
+	(bound-daemon
 		(let [ br (BufferedReader. (InputStreamReader. in))  ]
 			(doseq [x (take-while #(cond-fn %1) (repeatedly #(read-fn br)))]
 				(print-fn out x)))))
