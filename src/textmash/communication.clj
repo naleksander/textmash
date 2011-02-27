@@ -16,8 +16,8 @@
 			ByteArrayInputStream InputStreamReader PrintStream]))
 
 (def *remote-peer*)
-(def *reported-workers* (atom {}))
-
+(def *reported-existance* (ref {}))
+(def *incoming-listener* (atom nil))
 
 (defn parse-address[ addr ]
 	(let [ [x y] (.split addr ":") ]
@@ -121,30 +121,26 @@
 											(catch Exception e2 (.printStackTrace e2))
 												(finally (.close c1)))))))) s1))))
 
-(defn listen-timed-out[timeout fnc]
+(defn existance-listener[timeout incoming-fnc outcoming-fnc]
+	(reset! *incoming-listener* incoming-fnc)
 	(schedule (/ timeout 2)
-		(with-local-vars [timedout nil unit-names nil]
-			(swap! *reported-workers* (fn[workers-data]
-					(let [older-than (now (- timeout)) 
-						which-one (filter (fn[[k v]] (< v older-than)) (:when workers-data))]
-							(var-set timedout (map first which-one))
-							(apply dissoc-in workers-data [ :when ] @timedout))))
-			(if-not (empty? @timedout)
-				(fnc @timedout)))))
+		(let[ outcoming (dosync 
+			(let [ outcoming (map first (filter (fn[[k v]] (< v (now (- timeout)))) @*reported-existance*))]
+				(alter *reported-existance* #(apply dissoc %1 %2) outcoming) outcoming)) ]
+				(if (not-empty outcoming) (outcoming-fnc outcoming)))))
 
 
-(defn report-existance[ unit-address ]
-	(swap! *reported-workers* 
-		(fn[workers-data]
-			(assoc-in 
-				(if (nil? (get-in workers-data [:addresses unit-address] )) 
-					(update-in-using workers-data [:idle] #{} conj unit-address)
-						workers-data) [:when unit-address] (now)))))
+(defn report-existance[ address ]
+	(if-not (dosync 
+		(let[ incoming (contains? @*reported-existance* address) ]
+			(alter *reported-existance* assoc address (now)) incoming)) 
+				(if-let [ incoming-fnc @*incoming-listener* ] (incoming-fnc address))))
 
 
-;(listen-timed-out 5000 (fn[ a] (println "Received" a)))
-;
+;(existance-listener 5000 (fn[ b] (println "Incoming" b)) (fn[ a] (println "Outcoming" a)))
+
 ;(report-existance "127.0.0.1:12345")
+;(report-existance "127.0.0.1:12346")
 ;
 ;(defn test-me[ a ]
 ;	;(throw (RuntimeException. "owowow"))
