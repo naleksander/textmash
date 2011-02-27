@@ -9,7 +9,7 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.launcher
-	(:use (textmash stream config))
+	(:use (textmash stream communication config))
 	(:import (javax.swing JMenuBar JMenu JMenuItem AbstractAction)
 	(java.awt Dimension) (java.io InputStream OutputStream
 		BufferedReader InputStreamReader PrintStream
@@ -17,5 +17,4 @@
 
 (process (get-cfg :working-dir) (get-cfg :terminal-launcher { :title "Test" }))
 
-(hang-up)
 

@@ -55,7 +55,7 @@
 						(catch Exception e)))) ms ))
 
 
-(defn- call-remote* [addr type cmd data]
+(defn call-remote* [addr type cmd data]
 	(let [ [host port ] (parse-address addr) sck (Socket. ) ]
 			(.connect sck  (InetSocketAddress. 
 				(InetAddress/getByName host) port) 2500)
@@ -135,6 +135,9 @@
 		(let[ incoming (contains? @*reported-existance* address) ]
 			(alter *reported-existance* assoc address (now)) incoming)) 
 				(if-let [ incoming-fnc @*incoming-listener* ] (incoming-fnc address))))
+
+(defn existing[]
+	(map first @*reported-existance*))
 
 
 ;(existance-listener 5000 (fn[ b] (println "Incoming" b)) (fn[ a] (println "Outcoming" a)))

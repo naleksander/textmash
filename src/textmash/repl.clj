@@ -9,20 +9,22 @@
 ; You must not remove this notice, or any other, from this software.
 
 (ns textmash.repl
-	(:use (textmash stream config))
+	(:use (textmash stream communication config))
 	(:import (javax.swing JMenuBar JMenu JMenuItem AbstractAction)
 	(java.awt Dimension) (java.io File InputStream OutputStream
 		BufferedReader InputStreamReader PrintStream
 		PipedInputStream PipedOutputStream)))
 
-(daemon
-	(let [ out (PrintStream. (print-process (get-cfg :encoding) 
-			(get-cfg :working-dir) (get-cfg :repl)))]
-;			(stream-transfer (System/in) out)
-			(doseq [ x (range 5)]
-				(.println out (str "(println \"ąśćŻł\" " x " 20)"))
-				(.flush out)  (Thread/sleep 2000) ) 
-			(.close out)))
+(def repl-out (PrintStream. (print-process (get-cfg :encoding) (get-cfg :working-dir) (get-cfg :repl))))
+
+(defn execute-statement[ statement ]
+	(.println repl-out statement)
+	(.flush repl-out))
+
+(def repl-remote (bind-remote 0 execute-statement))
+
+(send-periodic-datagram "127.0.0.1:3246" 2500 (fn[]
+	(.getLocalPort repl-remote)))
 
 (hang-up)
 

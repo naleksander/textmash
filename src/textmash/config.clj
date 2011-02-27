@@ -23,7 +23,7 @@
 		:font-size 13
 	}
 	:mac {
-		:working-dir "/Users/aleksander/Documents/TextMash2"
+		:working-dir "/Users/aleksander/ClojureProjects/textmash/src"
 		:clojure-runtime "/Users/aleksander/.clojure/clojure-1.2.0.jar:/Users/aleksander/.clojure/clojure-contrib-1.2.0.jar"
 		:terminal-launcher [ "osascript" 
 		    "-e" "tell app \"Terminal\" to do script with command \"cd ${cfg:working-dir};/usr/bin/clear; java -cp ${sys:java.class.path}:${cfg:working-dir}:${cfg:clojure-runtime} clojure.main textmash/repl.clj 0 ${arg:title}\"" 
