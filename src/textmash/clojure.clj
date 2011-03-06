@@ -18,9 +18,12 @@
 (println (+ 3 4 ) x)
 (+ 2 3)  ")
 
-(def y " (+ 2 (* 4 5)) ")
+(def y " (println (+ 2 (* 4 5)) (str \"nice\" \"good job\") ) ")
 
-(def x (map second (re-seq #"\s*(\w+|[\(\)]|[\+\-\*\/]|\"([^\"]|\")*\")\s*" y)))
+(def x (map second (re-seq #"\s*(\w+|[\(\)]|[\+\-\*\/]|\"([^\"]|\")*?\")\s*" y)))
+
+(doseq [ z x ]
+	(println z))
 
 (defn evil[ s x ]
 	(let[ [ y & rx ] x ]
@@ -33,5 +36,5 @@
 						(evil (conj s (apply (first ff) (rest ff))) rxr))
 						(evil (conj s (load-string y)) rx))))))
 
-(println (evil [] x))
+(evil [] x)
 
