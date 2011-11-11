@@ -10,6 +10,8 @@
 
 (ns textmash.reflect)
 
+(def find-member-st (atom {}))
+
 (defn find-member [access-type-name access-type check-fn method-name obj]
        (if-let [mb (get-in @find-member-st [access-type-name (class obj) method-name])]
                mb
