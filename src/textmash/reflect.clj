@@ -10,38 +10,41 @@
 
 (ns textmash.reflect)
 
-(def find-member-st (atom {}))
-
-(defmacro find-member [access-type check-fn method-name obj]
-	`(if-let [mb# (get-in @find-member-st [~(name access-type) ~(class obj) ~(name method-name)])]
-		mb#
-		(letfn [ (find-rec#[ clazz# ]
-		(if (not (nil? clazz#))
-			(let [ms# (filter #(and (= (.getName %1) ~(name method-name)) (~check-fn %1) ) 
-				(. clazz# ~access-type ))]
-					(if-let [fms# (first ms#) ] (do (swap! find-member-st (fn[a#] (assoc-in a# [ ~(name access-type) 
-						~(class obj) ~(name method-name) ] fms#  ))) (.setAccessible fms# true) fms# )
-						(find-rec# (.getSuperclass clazz#))))
-						  ))] (find-rec# (class ~obj)) )) )
+(defn find-member [access-type-name access-type check-fn method-name obj]
+       (if-let [mb (get-in @find-member-st [access-type-name (class obj) method-name])]
+               mb
+               (letfn [ (find-rec[ clazz ]
+               (if (not (nil? clazz))
+                       (let [ms (filter #(and (= (.getName %1) method-name) (check-fn %1) )
+                               (access-type clazz  ))]
+                                       (if-let [fms (first ms) ] (do (swap! find-member-st (fn[a]
+(assoc-in a [ access-type-name
+                                               (class obj) method-name ] fms  ))) (.setAccessible fms true) fms )
+                                               (find-rec (.getSuperclass clazz))))
+                                                 ))] (find-rec (class obj)) )) )
 
 ; (find-member getDeclaredFields  (constantly true) width (Rectangle.))
 
 (defmacro ivkm [ obj method & args ]
-	`(if-let [ m# (find-member getDeclaredMethods
-				#(= ~(count args) (count (.getParameterTypes %1)))
-			 ~method ~obj )]
-		(.invoke  m# ~obj (into-array Object (vector ~@args)) )
-			(throw (Exception. (str "Failed to invoke " ~(name method))))))
+       `(if-let [ m# (find-member "method" (memfn  getDeclaredMethods)
+                               #(= ~(count args) (count (.getParameterTypes %1)))
+                        ~method ~obj )]
+               (.invoke  m# ~obj (into-array Object (vector ~@args)) )
+                       (throw (Exception. (str "Failed to invoke " ~(name method))))))
 
 (defmacro setf[ obj method arg ]
-	`(if-let [ m# (find-member getDeclaredFields (constantly true) ~method ~obj )]
-		(.set  m# ~obj ~arg )
-			(throw (Exception. (str "Failed to set field " ~(name method))))))
+   `(if-let [ m# (find-member "field" (memfn getDeclaredFields)
+	(constantly true) ~(name method) ~obj )]
+   (do (println ~(name method) ) (println @find-member-st )
+               (.set  m# ~obj ~arg ))
+                       (throw (Exception. (str "Failed to set field " ~(name method))))))
 
 (defmacro getf[ obj method ]
-	`(if-let [ m# (find-member getDeclaredFields (constantly true) ~method ~obj )]
-		(.get  m# ~obj )
-			(throw (Exception. (str "Failed to get field " ~(name method))))))
+     `(if-let [ m# (find-member "field" (memfn getDeclaredFields)
+		(constantly true) ~(name method) ~obj )]
+               (.get  m# ~obj )
+                       (throw (Exception. (str "Failed to get field " ~(name method))))))
+
 
 
 (defmacro swap+
